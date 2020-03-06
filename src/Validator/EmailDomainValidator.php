@@ -9,15 +9,19 @@ class EmailDomainValidator extends ConstraintValidator
 {
     public function validate($value, Constraint $constraint)
     {
-        /* @var $constraint \App\Validator\EmailDomain */
+        // @var $constraint \App\Validator\EmailDomain
 
         if (null === $value || '' === $value) {
             return;
         }
 
-        // TODO: implement the validation here
-        $this->context->buildViolation($constraint->message)
-            ->setParameter('{{ value }}', $value)
-            ->addViolation();
+        $domain = substr($value, strpos($value, '@') + 1);
+        if (in_array($domain, $constraint->blocked)) {
+            // TODO: implement the validation here
+            $this->context->buildViolation($constraint->message)
+                ->setParameter('{{ value }}', $value)
+                ->addViolation()
+            ;
+        }
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Tests\Validator;
 
+use App\Repository\ConfigRepository;
 use App\Validator\EmailDomain;
 use App\Validator\EmailDomainValidator;
 use PHPUnit\Framework\TestCase;
@@ -14,11 +15,22 @@ use Symfony\Component\Validator\Violation\ConstraintViolationBuilderInterface;
  */
 class EmailDomainValidatorTest extends TestCase
 {
-    public function getValidator($expectedVilation = false)
+    public function getValidator($expectedVilation = false, $dbBlockedDomain = [])
     {
+        $repository = $this->getMockBuilder(ConfigRepository::class)
+            ->disableOriginalConstructor()
+            ->getMock()
+        ;
+
+        $repository
+            ->expects($this->any())
+            ->method('getAsArray')
+            ->willReturn($dbBlockedDomain)
+        ;
+
         $context = $this->getMockBuilder(ExecutionContextInterface::class)->getMock();
 
-        $validator = new EmailDomainValidator();
+        $validator = new EmailDomainValidator($repository);
         if ($expectedVilation) {
             $violation = $this->getMockBuilder(ConstraintViolationBuilderInterface::class)->getMock();
             $violation
@@ -61,5 +73,13 @@ class EmailDomainValidatorTest extends TestCase
             'blocked' => ['baddomain.fr', 'aze.com'],
         ]);
         $this->getValidator(false)->validate('demo@gooddomain.fr', $constraint);
+    }
+
+    public function testBlockedDomainFromDatabase()
+    {
+        $constraint = new EmailDomain([
+            'blocked' => ['baddomain.fr', 'aze.com'],
+        ]);
+        $this->getValidator(true, ['baddbdomain.fr'])->validate('demo@baddbdomain.fr', $constraint);
     }
 }
